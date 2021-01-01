@@ -159,6 +159,7 @@ function test_compats_combinations(proj_dir; tmpdir=tempdir(), mode=ExtremaAll()
         for compat in compats
             @info "Going to test with modified [compat]" compat
             new_dir = mktempdir(tmpdir)
+            chmod(new_dir, 0o777, recursive=true)
             copy_project_change_compat(proj_dir, new_dir, compat)
             Pkg.activate(new_dir)
             Pkg.test()
