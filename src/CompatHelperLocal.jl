@@ -61,7 +61,8 @@ function check(pkg_dir::String)
                 @assert c.ok
             end
         end
-        println("Suggested [compat] section content:")
+        println("Suggested content:")
+        println("[compat]")
         for c in sort(dep_compats, by=c -> c.name)
             if c.compat_state == :missing
                 println("""$(c.name) = "$(generate_new_compat(c.latest))" """)
