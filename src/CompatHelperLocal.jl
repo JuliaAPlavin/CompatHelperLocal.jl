@@ -32,7 +32,7 @@ function check(pkg_dir::String)
     all_ok = true
     for dir in [pkg_dir, joinpath(pkg_dir, "test")]
         f = Pkg.Types.projectfile_path(dir, strict=true)
-        isfile(f) || continue
+        !isnothing(f) || continue
         project = Pkg.Types.read_project(f)
         dep_compats = map(project.deps |> collect) do (name, uuid)
             Pkg.Types.is_stdlib(uuid) && return (; name, compat_state = :stdlib, ok=true)
@@ -44,7 +44,7 @@ function check(pkg_dir::String)
             else
                 compat_spec = Pkg.Types.semver_spec(compat)
                 latest ∈ compat_spec && return (; name, compat_state = :uptodate, ok=true, compat, compat_spec)
-                return (; name, compat_state = :compat_outdated, ok=false, latest, compat, compat_spec)
+                return (; name, compat_state = :outdated, ok=false, latest, compat, compat_spec)
             end
         end
         all(c.ok for c in dep_compats) && continue
@@ -55,7 +55,7 @@ function check(pkg_dir::String)
                 println("unknown    $(c.name)")
             elseif c.compat_state == :missing
                 println("missing    $(c.name)")
-            elseif c.compat_state == :compat_outdated
+            elseif c.compat_state == :outdated
                 println("outdated   $(c.name)    compat=$(c.compat_spec)    latest=$(c.latest)")
             else
                 @assert c.ok
@@ -66,9 +66,9 @@ function check(pkg_dir::String)
         for c in sort(dep_compats, by=c -> c.name)
             if c.compat_state == :missing
                 println("""$(c.name) = "$(generate_new_compat(c.latest))" """)
-            elseif c.compat_state == :compat_outdated
+            elseif c.compat_state == :outdated
                 println("""$(c.name) = "$(merge_old_new_compat(c.compat, c.latest))" """)
-            elseif c.compat_state == :compat_uptodate
+            elseif c.compat_state == :uptodate
                 println("""$(c.name) = "$(c.compat)" """)
             else
                 @assert c.compat_state ∈ (:not_found, :stdlib)

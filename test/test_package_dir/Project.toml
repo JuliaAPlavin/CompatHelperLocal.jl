@@ -1,0 +1,15 @@
+name = "AstronomyData"
+uuid = "fde2a2d7-f0f7-4afe-ab6c-a8c3d7349667"
+authors = ["Alexander Plavin <alexander@plav.in>"]
+version = "0.1.0"
+
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+Scratch = "6c6a2e73-6563-6170-7368-637461726353"
+
+[compat]
+Scratch = "1.0"
