@@ -152,13 +152,13 @@ function copy_project_change_compat(orig_proj_dir, new_proj_dir, compat::Dict)
     )
 end
 
-function test_compats_combinations(proj_dir; mode=ExtremaAll())
+function test_compats_combinations(proj_dir; tmpdir=tempdir(), mode=ExtremaAll())
     prev_env = basename(Base.active_project())
     try
         compats = get_compats_combinations(joinpath(proj_dir, "Project.toml"), mode::ExtremaAll)
         for compat in compats
             @info "Going to test with modified [compat]" compat
-            new_dir = mktempdir()
+            new_dir = mktempdir(tmpdir)
             copy_project_change_compat(proj_dir, new_dir, compat)
             Pkg.activate(new_dir)
             Pkg.test()
