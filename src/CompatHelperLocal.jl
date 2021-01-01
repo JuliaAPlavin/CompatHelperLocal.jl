@@ -124,10 +124,11 @@ function get_compats_combinations(project_file, mode::ExtremaAll)
     filter!(c -> haskey(c, :versions_compatible), compats)
     return map(1:2) do i
         new_dict = map(compats) do c
-            c.name => "=$(extrema(c.versions_compatible)[i])"
+            ver = extrema(c.versions_compatible)[i]
+            ver = Base.thispatch(ver)
+            c.name => "=$(ver)"
         end |> Dict
         @assert isempty( setdiff(keys(original_compats_dict), keys(new_dict)) )
-        delete!(new_dict, "julia")  # DEV versions cannot be parsed as spec
         return new_dict
     end
 end
