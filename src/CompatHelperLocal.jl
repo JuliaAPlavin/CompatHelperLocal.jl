@@ -116,21 +116,18 @@ macro check()
 end
 
 
-struct ExtremaAll end
 
-function get_compats_combinations(project_file, mode::ExtremaAll)
+function get_compats_combinations(project_file)
     original_compats_dict = Pkg.Types.read_project(project_file).compat
     compats = gather_compats(project_file)
-    filter!(c -> haskey(c, :versions_compatible), compats)
-    return map(1:2) do i
-        new_dict = map(compats) do c
-            ver = extrema(c.versions_compatible)[i]
-            ver = Base.thispatch(ver)
-            c.name => "=$(ver)"
-        end |> Dict
-        @assert isempty( setdiff(keys(original_compats_dict), keys(new_dict)) )
+    filter!(c -> haskey(c, :versions_compatible) && c.name != "julia", compats)
+    return map(Iterators.product(compats, 1:2)) do (c, i)
+        new_dict = copy(original_compats_dict)
+        ver = extrema(c.versions_compatible)[i]
+        ver = Base.thispatch(ver)
+        new_dict[c.name] = "=$(ver)"
         return new_dict
-    end
+    end |> unique
 end
 
 function write_project_with_compat(orig_proj_file, new_proj_file, compat::Dict)
@@ -154,12 +151,13 @@ function copy_project_change_compat(orig_proj_dir, new_proj_dir, compat::Dict)
     )
 end
 
-function test_compats_combinations(proj_dir; tmpdir=tempdir(), mode=ExtremaAll())
+function test_compats_combinations(proj_dir; tmpdir=tempdir())
     prev_env = basename(Base.active_project())
     try
-        compats = get_compats_combinations(joinpath(proj_dir, "Project.toml"), mode::ExtremaAll)
+        compats = get_compats_combinations(joinpath(proj_dir, "Project.toml"))
+        @info "Going to test with modified [compat]s" length(compats)
         for compat in compats
-            @info "Going to test with modified [compat]" compat
+            @info "Testing with modified [compat]" compat
             new_dir = mktempdir(tmpdir)
             copy_project_change_compat(proj_dir, new_dir, compat)
             Pkg.activate(new_dir)
