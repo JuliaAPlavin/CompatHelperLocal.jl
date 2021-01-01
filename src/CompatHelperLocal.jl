@@ -90,10 +90,12 @@ function check(pkg_dir::String)
     return all_ok
 end
 
-"""Check [compat] entries for package that contains module `m`."""
+"""Check [compat] entries for package that contains module `m`.
+Reports issues and returns whether checks pass."""
 check(m::Module) = check(pkgdir(m))
 
 """Check [compat] entries for current package.
+Reports issues and returns whether checks pass.
 Can be called from the package itself, or from its tests."""
 macro check()
     file = String(__source__.file)

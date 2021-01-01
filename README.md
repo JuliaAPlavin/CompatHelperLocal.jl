@@ -112,10 +112,10 @@ check(m::Module) -> Bool
 
 ```
 
-Check [compat] entries for package that contains module `m`.
+Check [compat] entries for package that contains module `m`. Reports issues and returns whether checks pass.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/98b8fc0444e4a36b2baf821cdd20e5f4017fed8d/src/CompatHelperLocal.jl#L93' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/9635db3649717a7a302590cd1451f9fcc8dcce7c/src/CompatHelperLocal.jl#L93' class='documenter-source'>source</a><br>
 
 <a id='CompatHelperLocal.check-Tuple{String}' href='#CompatHelperLocal.check-Tuple{String}'>#</a>
 **`CompatHelperLocal.check`** &mdash; *Method*.
@@ -130,15 +130,15 @@ check(pkg_dir::String) -> Bool
 Check [compat] entries for package in `pkg_dir`. Reports issues and returns whether checks pass.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/98b8fc0444e4a36b2baf821cdd20e5f4017fed8d/src/CompatHelperLocal.jl#L37' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/9635db3649717a7a302590cd1451f9fcc8dcce7c/src/CompatHelperLocal.jl#L37' class='documenter-source'>source</a><br>
 
 <a id='CompatHelperLocal.@check-Tuple{}' href='#CompatHelperLocal.@check-Tuple{}'>#</a>
 **`CompatHelperLocal.@check`** &mdash; *Macro*.
 
 
 
-Check [compat] entries for current package. Can be called from the package itself, or from its tests.
+Check [compat] entries for current package. Reports issues and returns whether checks pass. Can be called from the package itself, or from its tests.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/98b8fc0444e4a36b2baf821cdd20e5f4017fed8d/src/CompatHelperLocal.jl#L96' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/9635db3649717a7a302590cd1451f9fcc8dcce7c/src/CompatHelperLocal.jl#L97' class='documenter-source'>source</a><br>
 
