@@ -1,7 +1,7 @@
 using Test
 import CompatHelperLocal
 
-@time @test CompatHelperLocal.@check()
+@time CompatHelperLocal.@check()
 
 @time CompatHelperLocal.check("./test_package_dir/")
 

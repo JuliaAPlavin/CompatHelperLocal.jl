@@ -7,7 +7,7 @@ Helps keep `[compat]` entries in your `Project.toml` up to date. Notifies when a
 Put the following lines to `<your package>/test/runtests.jl`:
 ```julia
 import CompatHelperLocal as CHL
-@test CHL.@check()
+CHL.@check()
 ```
 
 # Example
