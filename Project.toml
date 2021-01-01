@@ -9,3 +9,4 @@ Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [compat]
 DocStringExtensions = "0.8"
+julia = "1.5, 1.6"
