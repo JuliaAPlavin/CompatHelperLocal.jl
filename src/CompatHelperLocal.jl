@@ -1,5 +1,6 @@
 module CompatHelperLocal
 import Pkg
+using UUIDs: uuid4
 
 using DocStringExtensions
 @template DEFAULT = """
@@ -20,6 +21,9 @@ function merge_old_new_compat(old::String, latest::VersionNumber)::String
 end
 
 function get_latest_version(pkg_name::String)
+    if pkg_name == "julia"
+        return VERSION
+    end
     versions = mapreduce(vcat, Pkg.Types.collect_registries()) do reg
         registry = Pkg.Types.read_registry(joinpath(reg.path, "Registry.toml"))
         pkgs = filter(((uuid, dict),) -> dict["name"] == pkg_name, registry["packages"])
@@ -42,7 +46,7 @@ function check(pkg_dir::String)
         f = Pkg.Types.projectfile_path(dir, strict=true)
         !isnothing(f) || continue
         project = Pkg.Types.read_project(f)
-        dep_compats = map(project.deps |> collect) do (name, uuid)
+        dep_compats = map([collect(project.deps); [("julia", uuid4())]]) do (name, uuid)
             Pkg.Types.is_stdlib(uuid) && return (; name, compat_state = :stdlib, ok=true)
             compat = get(project.compat, name, "")
             latest = get_latest_version(name)
@@ -51,7 +55,7 @@ function check(pkg_dir::String)
                 return (; name, compat_state = :missing, ok=false, latest)
             else
                 compat_spec = Pkg.Types.semver_spec(compat)
-                latest ∈ compat_spec && return (; name, compat_state = :uptodate, ok=true, compat, compat_spec)
+                latest ∈ compat_spec && return (; name, compat_state = :uptodate, ok=true, latest, compat, compat_spec)
                 return (; name, compat_state = :outdated, ok=false, latest, compat, compat_spec)
             end
         end
@@ -60,7 +64,7 @@ function check(pkg_dir::String)
         @warn "Project has issues with [compat]" project=f
         for c in sort(dep_compats, by=c -> (c.compat_state, c.name))
             if c.compat_state == :not_found
-                @info "package not in registries" name=c.name
+                @info "package in [deps] but not found in registries" name=c.name
             elseif c.compat_state == :missing
                 @info "[compat] missing" name=c.name
             elseif c.compat_state == :outdated
@@ -72,15 +76,15 @@ function check(pkg_dir::String)
         println()
         println("Suggested content:")
         println("[compat]")
-        for c in sort(dep_compats, by=c -> c.name)
+        for c in sort(dep_compats, by=c -> c.name == "julia" ? "я" : c.name)  # put julia latest in the list
             if c.compat_state == :missing
-                println("""$(c.name) = "$(generate_new_compat(c.latest))" """)
+                println("$(c.name) = \"$(generate_new_compat(c.latest))\"")
             elseif c.compat_state == :outdated
-                println("""$(c.name) = "$(merge_old_new_compat(c.compat, c.latest))" """)
+                println("$(c.name) = \"$(merge_old_new_compat(c.compat, c.latest))\"")
             elseif c.compat_state == :uptodate
-                println("""$(c.name) = "$(c.compat)" """)
+                println("$(c.name) = \"$(c.compat)\"")
             elseif c.compat_state == :not_found
-                isempty(c.compat) || println("""$(c.name) = "$(c.compat)"  # package not found in registries""")
+                isempty(c.compat) || println("$(c.name) = \"$(c.compat)\"")
             else
                 @assert c.compat_state == :stdlib
             end

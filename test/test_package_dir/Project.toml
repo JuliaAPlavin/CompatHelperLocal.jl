@@ -10,9 +10,9 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Scratch = "6c6a2e73-6563-6170-7368-637461726353"
-XXXPackageXXX = "6c6a2e73-6563-6170-7368-637461726355"
+xxxPackageXXX = "6c6a2e73-6563-6170-7368-637461726355"
 YYYPackageYYY = "6c6a2e73-6563-6170-7368-637461726354"
 
 [compat]
 Scratch = "0.1, 0.2"
-XXXPackageXXX = "1.0"
+xxxPackageXXX = "1.0"

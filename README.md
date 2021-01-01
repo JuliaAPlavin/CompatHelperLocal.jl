@@ -48,12 +48,12 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Scratch = "6c6a2e73-6563-6170-7368-637461726353"
-XXXPackageXXX = "6c6a2e73-6563-6170-7368-637461726355"
+xxxPackageXXX = "6c6a2e73-6563-6170-7368-637461726355"
 YYYPackageYYY = "6c6a2e73-6563-6170-7368-637461726354"
 
 [compat]
 Scratch = "0.1, 0.2"
-XXXPackageXXX = "1.0"
+xxxPackageXXX = "1.0"
 ```
 
 
@@ -69,17 +69,19 @@ CHL.@check()
 ```
 ┌ Warning: Project has issues with [compat]
 │   project = "./test/test_package_dir/Project.toml"
-└ @ CompatHelperLocal ~/.julia/dev/CompatHelperLocal/src/CompatHelperLocal.jl:60
+└ @ CompatHelperLocal ~/.julia/dev/CompatHelperLocal/src/CompatHelperLocal.jl:64
 ┌ Info: [compat] missing
 └   name = "CSV"
 ┌ Info: [compat] missing
 └   name = "DataFrames"
 ┌ Info: [compat] missing
 └   name = "OrderedCollections"
-┌ Info: package not in registries
-└   name = "XXXPackageXXX"
-┌ Info: package not in registries
+┌ Info: [compat] missing
+└   name = "julia"
+┌ Info: package in [deps] but not found in registries
 └   name = "YYYPackageYYY"
+┌ Info: package in [deps] but not found in registries
+└   name = "xxxPackageXXX"
 ┌ Info: [compat] outdated
 │   name = "Scratch"
 │   compat = "0.1, 0.2"
@@ -92,7 +94,8 @@ CSV = "0.8"
 DataFrames = "0.22"
 OrderedCollections = "1.3"
 Scratch = "0.1, 0.2, 1.0"
-XXXPackageXXX = "1.0"  # package not found in registries
+xxxPackageXXX = "1.0"
+julia = "1.6"
 ```
 
 
@@ -115,7 +118,7 @@ check(m::Module) -> Bool
 Check [compat] entries for package that contains module `m`. Reports issues and returns whether checks pass.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/29178934c8c37af7029a084180545412ba3fe3e9/src/CompatHelperLocal.jl#L93' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/04aacd58550f5a9064b12af9499c4de6a87fa9ce/src/CompatHelperLocal.jl#L97' class='documenter-source'>source</a><br>
 
 <a id='CompatHelperLocal.check-Tuple{String}' href='#CompatHelperLocal.check-Tuple{String}'>#</a>
 **`CompatHelperLocal.check`** &mdash; *Method*.
@@ -130,7 +133,7 @@ check(pkg_dir::String) -> Bool
 Check [compat] entries for package in `pkg_dir`. Reports issues and returns whether checks pass.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/29178934c8c37af7029a084180545412ba3fe3e9/src/CompatHelperLocal.jl#L37' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/04aacd58550f5a9064b12af9499c4de6a87fa9ce/src/CompatHelperLocal.jl#L41' class='documenter-source'>source</a><br>
 
 <a id='CompatHelperLocal.@check-Tuple{}' href='#CompatHelperLocal.@check-Tuple{}'>#</a>
 **`CompatHelperLocal.@check`** &mdash; *Macro*.
@@ -140,7 +143,7 @@ Check [compat] entries for package in `pkg_dir`. Reports issues and returns whet
 Check [compat] entries for current package. Reports issues and returns whether checks pass. Can be called from the package itself, or from its tests.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/29178934c8c37af7029a084180545412ba3fe3e9/src/CompatHelperLocal.jl#L97' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/04aacd58550f5a9064b12af9499c4de6a87fa9ce/src/CompatHelperLocal.jl#L101' class='documenter-source'>source</a><br>
 
 
 <a id='License'></a>
