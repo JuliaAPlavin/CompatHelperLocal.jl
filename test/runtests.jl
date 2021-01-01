@@ -1,6 +1,6 @@
 using Test
 import CompatHelperLocal as CHL
 
-@test CHL.@check()
+@time @test CHL.@check()
 
-CHL.check("./test_package_dir/")
+@time CHL.check("./test_package_dir/")

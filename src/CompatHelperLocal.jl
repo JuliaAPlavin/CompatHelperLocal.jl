@@ -14,21 +14,22 @@ function merge_old_new_compat(old::String, latest::VersionNumber)::String
     "$(old), $(generate_new_compat(latest))"
 end
 
-
-function latest_registered_versions()
-    agg = map(Pkg.Types.collect_registries()) do reg
+function get_latest_version(pkg_name::String)
+    versions = mapreduce(vcat, Pkg.Types.collect_registries()) do reg
         registry = Pkg.Types.read_registry(joinpath(reg.path, "Registry.toml"))
-        map(registry["packages"] |> collect) do (uuid, pkg_dict)
-            versions = Pkg.Operations.load_versions(Pkg.Types.Context(), joinpath(reg.path, pkg_dict["path"]))
-            pkg_dict["name"] => maximum(versions)[1]
-        end |> Dict
+        pkgs = filter(((uuid, dict),) -> dict["name"] == pkg_name, registry["packages"])
+        if isempty(pkgs)
+            return []
+        else
+            uuid, dict = only(pkgs)
+            versions = Pkg.Operations.load_versions(Pkg.Types.Context(), joinpath(reg.path, dict["path"]))
+            return collect(keys(versions))
+        end
     end
-    return mergewith(max, agg...)
+    isempty(versions) ? nothing : maximum(versions)
 end
 
-
 function check(pkg_dir::String)
-    latest_vers = latest_registered_versions()
     all_ok = true
     for dir in [pkg_dir, joinpath(pkg_dir, "test")]
         f = Pkg.Types.projectfile_path(dir, strict=true)
@@ -37,8 +38,8 @@ function check(pkg_dir::String)
         dep_compats = map(project.deps |> collect) do (name, uuid)
             Pkg.Types.is_stdlib(uuid) && return (; name, compat_state = :stdlib, ok=true)
             compat = get(project.compat, name, "")
-            haskey(latest_vers, name) || return (; name, compat_spec = :not_found, ok=false)
-            latest = latest_vers[name]
+            latest = get_latest_version(name)
+            latest == nothing && return (; name, compat_spec = :not_found, ok=false)
             if isempty(compat)
                 return (; name, compat_state = :missing, ok=false, latest)
             else
