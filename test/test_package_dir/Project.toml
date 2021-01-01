@@ -1,5 +1,5 @@
-name = "AstronomyData"
-uuid = "fde2a2d7-f0f7-4afe-ab6c-a8c3d7349667"
+name = "TestPackage"
+uuid = "fde2a2d7-f0f0-4afe-ab6c-a8c3d7349667"
 authors = ["Alexander Plavin <alexander@plav.in>"]
 version = "0.1.0"
 

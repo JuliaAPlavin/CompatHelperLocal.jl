@@ -1,6 +1,11 @@
 module CompatHelperLocal
 import Pkg
 
+using DocStringExtensions
+@template DEFAULT = """
+$(TYPEDSIGNATURES)
+$(DOCSTRING)
+"""
 
 function generate_new_compat(v::VersionNumber)::String
     if v.major == 0 && v.minor == 0
@@ -29,6 +34,8 @@ function get_latest_version(pkg_name::String)
     isempty(versions) ? nothing : maximum(versions)
 end
 
+"""Check [compat] entries for package in `pkg_dir`.
+Reports issues and returns whether checks pass."""
 function check(pkg_dir::String)
     all_ok = true
     for dir in [pkg_dir, joinpath(pkg_dir, "test")]
@@ -83,8 +90,11 @@ function check(pkg_dir::String)
     return all_ok
 end
 
+"""Check [compat] entries for package that contains module `m`."""
 check(m::Module) = check(pkgdir(m))
 
+"""Check [compat] entries for current package.
+Can be called from the package itself, or from its tests."""
 macro check()
     file = String(__source__.file)
     dir = dirname(file)
