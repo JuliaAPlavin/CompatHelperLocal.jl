@@ -80,7 +80,12 @@ end
 check(m::Module) = check(pkgdir(m))
 
 macro check()
-    :(check(dirname(@__DIR__)))
+    file = String(__source__.file)
+    dir = dirname(file)
+    if basename(dir) == "test"
+        dir = dirname(dir)
+    end
+    :(check($dir))
 end
 
 end
