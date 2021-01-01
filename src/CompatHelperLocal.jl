@@ -127,7 +127,7 @@ function get_compats_combinations(project_file, mode::ExtremaAll)
             c.name => "=$(extrema(c.versions_compatible)[i])"
         end |> Dict
         @assert isempty( setdiff(keys(original_compats_dict), keys(new_dict)) )
-        new_dict["julia"] = original_compats_dict["julia"]  # DEV versions cannot be parsed as spec
+        delete!(new_dict, "julia")  # DEV versions cannot be parsed as spec
         return new_dict
     end
 end
@@ -143,7 +143,7 @@ function copy_project_change_compat(orig_proj_dir, new_proj_dir, compat::Dict)
     @assert isdir(orig_proj_dir)
     @info "Copying project files $orig_proj_dir => $new_proj_dir"
     cp(orig_proj_dir, new_proj_dir, force=true)
-    rm(joinpath(new_proj_dir, "Manifest.toml"))  # not really needed?..
+    rm(joinpath(new_proj_dir, "Manifest.toml"), force=true)  # not really needed?..
     @info "Modifying compat in $new_proj_dir"
     write_project_with_compat(
         joinpath(new_proj_dir, "Project.toml"),
