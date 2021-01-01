@@ -115,7 +115,7 @@ check(m::Module) -> Bool
 Check [compat] entries for package that contains module `m`. Reports issues and returns whether checks pass.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/9635db3649717a7a302590cd1451f9fcc8dcce7c/src/CompatHelperLocal.jl#L93' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/29178934c8c37af7029a084180545412ba3fe3e9/src/CompatHelperLocal.jl#L93' class='documenter-source'>source</a><br>
 
 <a id='CompatHelperLocal.check-Tuple{String}' href='#CompatHelperLocal.check-Tuple{String}'>#</a>
 **`CompatHelperLocal.check`** &mdash; *Method*.
@@ -130,7 +130,7 @@ check(pkg_dir::String) -> Bool
 Check [compat] entries for package in `pkg_dir`. Reports issues and returns whether checks pass.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/9635db3649717a7a302590cd1451f9fcc8dcce7c/src/CompatHelperLocal.jl#L37' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/29178934c8c37af7029a084180545412ba3fe3e9/src/CompatHelperLocal.jl#L37' class='documenter-source'>source</a><br>
 
 <a id='CompatHelperLocal.@check-Tuple{}' href='#CompatHelperLocal.@check-Tuple{}'>#</a>
 **`CompatHelperLocal.@check`** &mdash; *Macro*.
@@ -140,5 +140,27 @@ Check [compat] entries for package in `pkg_dir`. Reports issues and returns whet
 Check [compat] entries for current package. Reports issues and returns whether checks pass. Can be called from the package itself, or from its tests.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/9635db3649717a7a302590cd1451f9fcc8dcce7c/src/CompatHelperLocal.jl#L97' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/29178934c8c37af7029a084180545412ba3fe3e9/src/CompatHelperLocal.jl#L97' class='documenter-source'>source</a><br>
+
+
+<a id='License'></a>
+
+<a id='License-1'></a>
+
+# License
+
+
+MIT License
+
+
+Copyright 2020 Alexander Plavin
+
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
