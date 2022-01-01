@@ -15,7 +15,7 @@ import CompatHelperLocal as CHL
     dep_compats = CHL.gather_compats("./test_package_dir/Project.toml")
     compat_block = CHL.generate_compat_block(dep_compats)
     @test occursin(r"""\[compat\]
-CSV = "0\.8\.\d"
+CSV = "\d\.\d\.\d"
 DataFrames = "1\.\d\.\d"
 OrderedCollections = "1\.4\.\d"
 Scratch = "0\.1, 0\.2, 1\.\d\.\d"
