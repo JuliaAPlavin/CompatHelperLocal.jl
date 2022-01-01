@@ -10,9 +10,9 @@ import CompatHelperLocal
 CSV = "0\.8"
 DataFrames = "1\.\d"
 OrderedCollections = "1\.4"
-Scratch = "0\.1, 0\.2, 1\.0"
+Scratch = "0\.1, 0\.2, 1\.\d"
 xxxPackageXXX = "1\.0"
-julia = "1\.[67]"
+julia = "1\.[6789]"
 """, compat_block)
 end
 
