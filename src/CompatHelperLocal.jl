@@ -176,6 +176,7 @@ end
 function copy_project_change_compat(orig_proj_dir, new_proj_dir, compat::Dict)
     @info "Copying project files $orig_proj_dir => $new_proj_dir"
     cp(orig_proj_dir, new_proj_dir, force=true)
+    chmod(new_proj_dir, 0o777, recursive=true)  # github actions fail with permission error otherwise
     for p in ["Manifest.toml", "test/Manifest.toml"]
         rm(joinpath(new_proj_dir, p), force=true)
     end
