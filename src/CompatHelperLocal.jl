@@ -82,7 +82,7 @@ end
 is_ok(::Union{IsStdlib, Uptodate}) = true
 is_ok(::Union{Missing, Outdated, PackageNotFound}) = false
 
-generate_new_compat(v::VersionNumber)::String = (v.major, v.minor) == (0, 0) ? "0.0.$(v.patch)" : "$(v.major).$(v.minor)"
+generate_new_compat(v::VersionNumber)::String = string(Base.thispatch(v))
 
 generate_compat_str(c::Missing) = generate_new_compat(maximum(c.versions))
 generate_compat_str(c::Outdated) = "$(c.compat.str), $(generate_new_compat(maximum(c.versions)))"
