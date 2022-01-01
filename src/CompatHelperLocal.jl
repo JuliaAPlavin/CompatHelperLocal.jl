@@ -130,7 +130,7 @@ end
 
 """Check [compat] entries for package in `pkg_dir`.
 Reports issues and returns whether checks pass."""
-function check(pkg_dir::String)
+function check(pkg_dir::String; quiet=false)
     all_ok = true
     for dir in [pkg_dir, joinpath(pkg_dir, "test")]
         f = Pkg.Types.projectfile_path(dir, strict=true)
@@ -138,6 +138,7 @@ function check(pkg_dir::String)
         dep_compats = gather_compats(f)
         all(is_ok, dep_compats) && continue
         all_ok = false
+        if !quiet
         @warn "Project has issues with [compat]" project=f
 
         for (msg, args) in generate_compat_issues(dep_compats)
@@ -147,6 +148,7 @@ function check(pkg_dir::String)
         println("Suggested content:")
         println(generate_compat_block(dep_compats))
         println()
+        end
     end
     return all_ok
 end
