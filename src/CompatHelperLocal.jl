@@ -8,46 +8,23 @@ $(TYPEDSIGNATURES)
 $(DOCSTRING)
 """
 
-@static if Base.VERSION >= v"1.7.0-"
-    function get_versions_in_repository(pkg_name::String)
-        if pkg_name == "julia"
-            return [VERSION]
-        end
-        return mapreduce(vcat, Pkg.Registry.reachable_registries()) do reg
-            pkgs = filter(((uuid, pkg),) -> pkg.name == pkg_name, reg.pkgs)
-            if isempty(pkgs)
-                return []
-            else
-                uuid, pkg = only(pkgs)
-                info = Pkg.Registry.registry_info(pkg)
-                return collect(keys(info.version_info))
-            end
-        end
+function get_versions_in_repository(pkg_name::String)
+    if pkg_name == "julia"
+        return [VERSION]
     end
-else
-    function get_versions_in_repository(pkg_name::String)
-        if pkg_name == "julia"
-            return [VERSION]
-        end
-        return mapreduce(vcat, Pkg.Types.collect_registries()) do reg
-            registry = Pkg.Types.read_registry(joinpath(reg.path, "Registry.toml"))
-            pkgs = filter(((uuid, dict),) -> dict["name"] == pkg_name, registry["packages"])
-            if isempty(pkgs)
-                return []
-            else
-                uuid, dict = only(pkgs)
-                versions = Pkg.Operations.load_versions(Pkg.Types.Context(), joinpath(reg.path, dict["path"]))
-                return collect(keys(versions))
-            end
+    return mapreduce(vcat, Pkg.Registry.reachable_registries()) do reg
+        pkgs = filter(((uuid, pkg),) -> pkg.name == pkg_name, reg.pkgs)
+        if isempty(pkgs)
+            return []
+        else
+            uuid, pkg = only(pkgs)
+            info = Pkg.Registry.registry_info(pkg)
+            return collect(keys(info.version_info))
         end
     end
 end
 
-@static if Base.thisminor(VERSION) <= v"1.6"
-    get_compat_full(proj, name) = haskey(proj.compat, name) ? (val=Pkg.Types.semver_spec(proj.compat[name]), str=proj.compat[name]) : (val=Pkg.Types.VersionSpec(), str=nothing)
-else
-    get_compat_full(proj, name) = (val=Pkg.Operations.get_compat(proj, name), str=Pkg.Operations.get_compat_str(proj, name))
-end
+get_compat_full(proj, name) = (val=Pkg.Operations.get_compat(proj, name), str=Pkg.Operations.get_compat_str(proj, name))
 
 module CompatStates
 abstract type State end
