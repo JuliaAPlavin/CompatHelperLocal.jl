@@ -128,6 +128,17 @@ function generate_compat_block(dep_compats::Vector{<:CompatStates.State})
     return join(lines, "\n") * "\n"
 end
 
+function generate_compat_dict(dep_compats::Vector{<:CompatStates.State})
+    dct = Dict()
+    for c in sort(dep_compats, by=c -> c.name == "julia" ? "я" : c.name)  # put julia latest in the list
+        compat_str = generate_compat_str(c)
+        compat_str === nothing && continue
+        dct[c.name] = compat_str
+    end
+    return dct
+end
+generate_compat_dict(projectfile::String) = generate_compat_dict(gather_compats(projectfile))
+
 """Check [compat] entries for package in `pkg_dir`.
 Reports issues and returns whether checks pass."""
 function check(pkg_dir::String; quiet=false)
