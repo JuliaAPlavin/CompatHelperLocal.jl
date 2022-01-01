@@ -20,19 +20,37 @@ function merge_old_new_compat(old::String, latest::VersionNumber)::String
     "$(old), $(generate_new_compat(latest))"
 end
 
-function get_versions_in_repository(pkg_name::String)
-    if pkg_name == "julia"
-        return [VERSION]
+@static if Base.VERSION >= v"1.7.0-"
+    function get_versions_in_repository(pkg_name::String)
+        if pkg_name == "julia"
+            return [VERSION]
+        end
+        return mapreduce(vcat, Pkg.Registry.reachable_registries()) do reg
+            pkgs = filter(((uuid, pkg),) -> pkg.name == pkg_name, reg.pkgs)
+            if isempty(pkgs)
+                return []
+            else
+                uuid, pkg = only(pkgs)
+                info = Pkg.Registry.registry_info(pkg)
+                return collect(keys(info.version_info))
+            end
+        end
     end
-    return mapreduce(vcat, Pkg.Types.collect_registries()) do reg
-        registry = Pkg.Types.read_registry(joinpath(reg.path, "Registry.toml"))
-        pkgs = filter(((uuid, dict),) -> dict["name"] == pkg_name, registry["packages"])
-        if isempty(pkgs)
-            return []
-        else
-            uuid, dict = only(pkgs)
-            versions = Pkg.Operations.load_versions(Pkg.Types.Context(), joinpath(reg.path, dict["path"]))
-            return collect(keys(versions))
+else
+    function get_versions_in_repository(pkg_name::String)
+        if pkg_name == "julia"
+            return [VERSION]
+        end
+        return mapreduce(vcat, Pkg.Types.collect_registries()) do reg
+            registry = Pkg.Types.read_registry(joinpath(reg.path, "Registry.toml"))
+            pkgs = filter(((uuid, dict),) -> dict["name"] == pkg_name, registry["packages"])
+            if isempty(pkgs)
+                return []
+            else
+                uuid, dict = only(pkgs)
+                versions = Pkg.Operations.load_versions(Pkg.Types.Context(), joinpath(reg.path, dict["path"]))
+                return collect(keys(versions))
+            end
         end
     end
 end
