@@ -8,18 +8,6 @@ $(TYPEDSIGNATURES)
 $(DOCSTRING)
 """
 
-function generate_new_compat(v::VersionNumber)::String
-    if v.major == 0 && v.minor == 0
-        return "0.0.$(v.patch)"
-    else
-        return "$(v.major).$(v.minor)"
-    end
-end
-
-function merge_old_new_compat(old::String, latest::VersionNumber)::String
-    "$(old), $(generate_new_compat(latest))"
-end
-
 @static if Base.VERSION >= v"1.7.0-"
     function get_versions_in_repository(pkg_name::String)
         if pkg_name == "julia"
@@ -61,20 +49,73 @@ else
     get_compat_full(proj, name) = (val=Pkg.Operations.get_compat(proj, name), str=Pkg.Operations.get_compat_str(proj, name))
 end
 
+module CompatStates
+abstract type State end
+
+Base.@kwdef struct PackageNotFound <: State
+    name::String
+    compat
+end
+
+Base.@kwdef struct IsStdlib <: State
+    name::String
+end
+
+Base.@kwdef struct Missing <: State
+    name::String
+    compat
+    versions::Vector{VersionNumber}
+end
+
+Base.@kwdef struct Uptodate <: State
+    name::String
+    compat
+    versions::Vector{VersionNumber}
+end
+
+Base.@kwdef struct Outdated <: State
+    name::String
+    compat
+    versions::Vector{VersionNumber}
+end
+
+is_ok(::Union{IsStdlib, Uptodate}) = true
+is_ok(::Union{Missing, Outdated, PackageNotFound}) = false
+
+function generate_new_compat(v::VersionNumber)::String
+    if v.major == 0 && v.minor == 0
+        return "0.0.$(v.patch)"
+    else
+        return "$(v.major).$(v.minor)"
+    end
+end
+
+function merge_old_new_compat(old::String, latest::VersionNumber)::String
+    "$(old), $(generate_new_compat(latest))"
+end
+
+generate_compat_str(c::Missing) = generate_new_compat(maximum(c.versions))
+generate_compat_str(c::Outdated) = merge_old_new_compat(c.compat.str, maximum(c.versions))
+generate_compat_str(c::Uptodate) = c.compat.str
+generate_compat_str(c::PackageNotFound) = c.compat.str
+generate_compat_str(c::IsStdlib) = nothing
+end
+import .CompatStates: is_ok, generate_compat_str
+
+
 function gather_compats(project_file)
     project = Pkg.Types.read_project(project_file)
     return map([collect(project.deps); [("julia", uuid4())]]) do (name, uuid)
-        Pkg.Types.is_stdlib(uuid) && return (; name, compat_state = :stdlib, ok=true)
+        Pkg.Types.is_stdlib(uuid) && return CompatStates.IsStdlib(; name)
         compat = get_compat_full(project, name)
         versions = get_versions_in_repository(name)
-        isempty(versions) && return (; name, compat_state = :not_found, ok=false, compat)
-        latest = maximum(versions)
-        if compat.str === nothing
-            return (; name, compat_state = :missing, ok=false, latest, versions, versions_compatible=versions)
+        isempty(versions) && return CompatStates.PackageNotFound(; name, compat)
+        return if compat.str === nothing
+            CompatStates.Missing(; name, compat, versions)
+        elseif maximum(versions) ∈ compat.val
+            CompatStates.Uptodate(; name, compat, versions)
         else
-            versions_compatible = filter(∈(compat.val), versions)
-            latest ∈ compat.val && return (; name, compat_state = :uptodate, ok=true, latest, versions, versions_compatible, compat)
-            return (; name, compat_state = :outdated, ok=false, latest, versions, versions_compatible, compat)
+            CompatStates.Outdated(; name, compat, versions)
         end
     end
 end
@@ -87,35 +128,24 @@ function check(pkg_dir::String)
         f = Pkg.Types.projectfile_path(dir, strict=true)
         !isnothing(f) || continue
         dep_compats = gather_compats(f)
-        all(c.ok for c in dep_compats) && continue
+        all(is_ok(c) for c in dep_compats) && continue
         all_ok = false
         @warn "Project has issues with [compat]" project=f
-        for c in sort(dep_compats, by=c -> (c.compat_state, c.name))
-            if c.compat_state == :not_found
-                @info "package in [deps] but not found in registries" name=c.name
-            elseif c.compat_state == :missing
-                @info "[compat] missing" name=c.name
-            elseif c.compat_state == :outdated
-                @info "[compat] outdated" name=c.name compat=c.compat latest=c.latest
-            else
-                @assert c.ok
-            end
+
+        message_args(c::CompatStates.PackageNotFound) = ("package in [deps] but not found in registries", (;c.name))
+        message_args(c::CompatStates.Missing) = ("[compat] missing", (;c.name))
+        message_args(c::CompatStates.Outdated) = ("[compat] outdated", (;c.name, c.compat, latest=maximum(c.versions)))
+
+        for c in sort(filter(!is_ok, dep_compats), by=c -> (string(typeof(c)), c.name))
+            msg, args = message_args(c)
+            @info msg args...
         end
         println()
         println("Suggested content:")
         println("[compat]")
         for c in sort(dep_compats, by=c -> c.name == "julia" ? "я" : c.name)  # put julia latest in the list
-            if c.compat_state == :missing
-                println("$(c.name) = \"$(generate_new_compat(c.latest))\"")
-            elseif c.compat_state == :outdated
-                println("$(c.name) = \"$(merge_old_new_compat(c.compat.str, c.latest))\"")
-            elseif c.compat_state == :uptodate
-                println("$(c.name) = \"$(c.compat.str)\"")
-            elseif c.compat_state == :not_found
-                c.compat.str === nothing || println("$(c.name) = \"$(c.compat.str)\"")
-            else
-                @assert c.compat_state == :stdlib
-            end
+            compat_str = generate_compat_str(c)
+            compat_str === nothing || println("$(c.name) = \"$(compat_str)\"")
         end
         println()
     end
