@@ -114,29 +114,38 @@ function gather_compats(project_file)
     end
 end
 
+function generate_compat_issues(dep_compats::Vector{<:CompatStates.State})
+    dcs = sort(filter(!is_ok, dep_compats), by=c -> (string(typeof(c)), c.name))
+    map(info_message_args, dcs)
+end
+
+function generate_compat_block(dep_compats::Vector{<:CompatStates.State})
+    lines = ["[compat]"]
+    for c in sort(dep_compats, by=c -> c.name == "julia" ? "я" : c.name)  # put julia latest in the list
+        compat_str = generate_compat_str(c)
+        compat_str === nothing || push!(lines, "$(c.name) = \"$(compat_str)\"")
+    end
+    return join(lines, "\n")
+end
+
 """Check [compat] entries for package in `pkg_dir`.
 Reports issues and returns whether checks pass."""
 function check(pkg_dir::String)
     all_ok = true
     for dir in [pkg_dir, joinpath(pkg_dir, "test")]
         f = Pkg.Types.projectfile_path(dir, strict=true)
-        !isnothing(f) || continue
+        isnothing(f) && continue
         dep_compats = gather_compats(f)
-        all(is_ok(c) for c in dep_compats) && continue
+        all(is_ok, dep_compats) && continue
         all_ok = false
         @warn "Project has issues with [compat]" project=f
 
-        for c in sort(filter(!is_ok, dep_compats), by=c -> (string(typeof(c)), c.name))
-            msg, args = info_message_args(c)
+        for (msg, args) in generate_compat_issues(dep_compats)
             @info msg args...
         end
         println()
         println("Suggested content:")
-        println("[compat]")
-        for c in sort(dep_compats, by=c -> c.name == "julia" ? "я" : c.name)  # put julia latest in the list
-            compat_str = generate_compat_str(c)
-            compat_str === nothing || println("$(c.name) = \"$(compat_str)\"")
-        end
+        println(generate_compat_block(dep_compats))
         println()
     end
     return all_ok
