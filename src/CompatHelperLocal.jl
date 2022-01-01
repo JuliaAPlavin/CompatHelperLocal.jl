@@ -125,7 +125,7 @@ function generate_compat_block(dep_compats::Vector{<:CompatStates.State})
         compat_str = generate_compat_str(c)
         compat_str === nothing || push!(lines, "$(c.name) = \"$(compat_str)\"")
     end
-    return join(lines, "\n")
+    return join(lines, "\n") * "\n"
 end
 
 """Check [compat] entries for package in `pkg_dir`.

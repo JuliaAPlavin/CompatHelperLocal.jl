@@ -21,7 +21,7 @@ Put the following lines to `<your package>/test/runtests.jl`:
 
 ```julia
 import CompatHelperLocal as CHL
-@test CHL.@check()
+CHL.@check()
 ```
 
 
@@ -69,7 +69,7 @@ CHL.@check()
 ```
 ┌ Warning: Project has issues with [compat]
 │   project = "./test/test_package_dir/Project.toml"
-└ @ CompatHelperLocal ~/.julia/dev/CompatHelperLocal/src/CompatHelperLocal.jl:64
+└ @ CompatHelperLocal ~/.julia/dev/CompatHelperLocal/src/CompatHelperLocal.jl:141
 ┌ Info: [compat] missing
 └   name = "CSV"
 ┌ Info: [compat] missing
@@ -78,21 +78,20 @@ CHL.@check()
 └   name = "OrderedCollections"
 ┌ Info: [compat] missing
 └   name = "julia"
+┌ Info: [compat] outdated
+│   name = "Scratch"
+│   compat = (val = VersionSpec("0.1-0.2"), str = "0.1, 0.2")
+└   latest = v"1.0.3"
 ┌ Info: package in [deps] but not found in registries
 └   name = "YYYPackageYYY"
 ┌ Info: package in [deps] but not found in registries
 └   name = "xxxPackageXXX"
-┌ Info: [compat] outdated
-│   name = "Scratch"
-│   compat = "0.1, 0.2"
-│   compat_spec = VersionSpec("0.1-0.2")
-└   latest = v"1.0.3"
 
 Suggested content:
 [compat]
 CSV = "0.8"
 DataFrames = "0.22"
-OrderedCollections = "1.3"
+OrderedCollections = "1.4"
 Scratch = "0.1, 0.2, 1.0"
 xxxPackageXXX = "1.0"
 julia = "1.6"
@@ -118,7 +117,7 @@ check(m::Module) -> Bool
 Check [compat] entries for package that contains module `m`. Reports issues and returns whether checks pass.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/f0729769af637ecb7921a7f004fc2ed00a5df8bd/src/CompatHelperLocal.jl#L97' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/ff22009310a504cd77b7ec8946321665bf962d3c/src/CompatHelperLocal.jl#L154' class='documenter-source'>source</a><br>
 
 <a id='CompatHelperLocal.check-Tuple{String}' href='#CompatHelperLocal.check-Tuple{String}'>#</a>
 **`CompatHelperLocal.check`** &mdash; *Method*.
@@ -133,7 +132,7 @@ check(pkg_dir::String) -> Bool
 Check [compat] entries for package in `pkg_dir`. Reports issues and returns whether checks pass.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/f0729769af637ecb7921a7f004fc2ed00a5df8bd/src/CompatHelperLocal.jl#L41' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/ff22009310a504cd77b7ec8946321665bf962d3c/src/CompatHelperLocal.jl#L131' class='documenter-source'>source</a><br>
 
 <a id='CompatHelperLocal.@check-Tuple{}' href='#CompatHelperLocal.@check-Tuple{}'>#</a>
 **`CompatHelperLocal.@check`** &mdash; *Macro*.
@@ -143,5 +142,5 @@ Check [compat] entries for package in `pkg_dir`. Reports issues and returns whet
 Check [compat] entries for current package. Reports issues and returns whether checks pass. Can be called from the package itself, or from its tests.
 
 
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/f0729769af637ecb7921a7f004fc2ed00a5df8bd/src/CompatHelperLocal.jl#L101' class='documenter-source'>source</a><br>
+<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/ff22009310a504cd77b7ec8946321665bf962d3c/src/CompatHelperLocal.jl#L158' class='documenter-source'>source</a><br>
 
