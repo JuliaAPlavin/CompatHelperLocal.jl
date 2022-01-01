@@ -59,6 +59,9 @@ end
 is_ok(::Union{IsStdlib, Uptodate}) = true
 is_ok(::Union{Missing, Outdated, PackageNotFound}) = false
 
+all_versions(c::Union{Missing, Uptodate, Outdated}) = c.versions
+compatible_versions(c::Union{Missing, Uptodate, Outdated}) = filter(∈(c.compat.val), c.versions)
+
 generate_new_compat(v::VersionNumber; is_julia)::String = is_julia ? "$(v.major).$(v.minor)" : string(Base.thispatch(v))
 
 generate_compat_str(c::Missing) = generate_new_compat(maximum(c.versions); is_julia=c.name=="julia")
@@ -160,47 +163,40 @@ end
 
 
 function get_compats_combinations(project_file)
-    original_compats_dict = Pkg.Types.read_project(project_file).compat
     compats = gather_compats(project_file)
-    filter!(c -> haskey(c, :versions_compatible) && c.name != "julia", compats)
-    return map(Iterators.product(compats, 1:2)) do (c, i)
-        new_dict = copy(original_compats_dict)
-        ver = extrema(c.versions_compatible)[i]
-        ver = Base.thispatch(ver)
-        new_dict[c.name] = "=$(ver)"
-        return new_dict
-    end |> unique
-end
-
-function write_project_with_compat(orig_proj_file, new_proj_file, compat::Dict)
-    @assert isfile(orig_proj_file)
-    proj = Pkg.Types.read_project(orig_proj_file)
-    proj.compat = compat
-    Pkg.Types.write_project(proj, new_proj_file)
+    compats = filter(c -> !(c isa CompatStates.IsStdlib) && c.name != "julia", compats)
+    @assert all(c -> !isempty(c.versions), compats)
+    map(Iterators.product(compats, 1:2)) do (c, i)
+        cvers = CompatStates.compatible_versions(c)
+        ver = extrema(cvers)[i] |> Base.thispatch
+        Dict(c.name => "=$(ver)")
+    end
 end
 
 function copy_project_change_compat(orig_proj_dir, new_proj_dir, compat::Dict)
-    @assert isdir(orig_proj_dir)
     @info "Copying project files $orig_proj_dir => $new_proj_dir"
     cp(orig_proj_dir, new_proj_dir, force=true)
-    chmod(new_proj_dir, 0o777, recursive=true)
-    rm(joinpath(new_proj_dir, "Manifest.toml"), force=true)  # not really needed?..
-    @info "Modifying compat in $new_proj_dir"
-    write_project_with_compat(
-        joinpath(new_proj_dir, "Project.toml"),
-        joinpath(new_proj_dir, "Project.toml"),
-        compat,
-    )
+    for p in ["Manifest.toml", "test/Manifest.toml"]
+        rm(joinpath(new_proj_dir, p), force=true)
+    end
+    project_file = joinpath(new_proj_dir, "Project.toml")
+    @info "Modifying compat in $project_file"
+    proj = Pkg.Types.read_project(project_file)
+    for (name, spec) in compat
+        Pkg.Operations.set_compat(proj, name, spec)
+    end
+    Pkg.Types.write_project(proj, project_file)
 end
 
-function test_compats_combinations(proj_dir; tmpdir=tempdir())
+test_compats_combinations(m::Module) = test_compats_combinations(pathof(m) |> dirname |> dirname)
+function test_compats_combinations(proj_dir::AbstractString)
     prev_env = basename(Base.active_project())
     try
         compats = get_compats_combinations(joinpath(proj_dir, "Project.toml"))
         @info "Going to test with modified [compat]s" length(compats)
         for compat in compats
-            @info "Testing with modified [compat]" compat
-            new_dir = mktempdir(tmpdir)
+            new_dir = mktempdir()
+            @info "Testing with modified [compat]" compat dir=new_dir
             copy_project_change_compat(proj_dir, new_dir, compat)
             Pkg.activate(new_dir)
             Pkg.test()
