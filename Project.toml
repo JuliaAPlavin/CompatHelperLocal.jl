@@ -1,7 +1,7 @@
 name = "CompatHelperLocal"
 uuid = "5224ae11-6099-4aaa-941d-3aab004bd678"
 authors = ["Alexander Plavin <alexander@plav.in>"]
-version = "0.1.14"
+version = "0.1.15"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
@@ -10,4 +10,4 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
 DocStringExtensions = "0.8"
-julia = "1.5"
+julia = "1.6"

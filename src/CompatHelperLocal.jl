@@ -55,21 +55,26 @@ else
     end
 end
 
+@static if Base.thisminor(VERSION) <= v"1.6"
+    get_compat_full(proj, name) = haskey(proj.compat, name) ? (val=Pkg.Types.semver_spec(proj.compat[name]), str=proj.compat[name]) : (val=Pkg.Types.VersionSpec(), str=nothing)
+else
+    get_compat_full(proj, name) = (val=Pkg.Operations.get_compat(proj, name), str=Pkg.Operations.get_compat_str(proj, name))
+end
+
 function gather_compats(project_file)
     project = Pkg.Types.read_project(project_file)
     return map([collect(project.deps); [("julia", uuid4())]]) do (name, uuid)
         Pkg.Types.is_stdlib(uuid) && return (; name, compat_state = :stdlib, ok=true)
-        compat = get(project.compat, name, "")
+        compat = get_compat_full(project, name)
         versions = get_versions_in_repository(name)
         isempty(versions) && return (; name, compat_state = :not_found, ok=false, compat)
         latest = maximum(versions)
-        if isempty(compat)
+        if compat.str === nothing
             return (; name, compat_state = :missing, ok=false, latest, versions, versions_compatible=versions)
         else
-            compat_spec = Pkg.Types.semver_spec(compat)
-            versions_compatible = filter(∈(compat_spec), versions)
-            latest ∈ compat_spec && return (; name, compat_state = :uptodate, ok=true, latest, versions, versions_compatible, compat, compat_spec)
-            return (; name, compat_state = :outdated, ok=false, latest, versions, versions_compatible, compat, compat_spec)
+            versions_compatible = filter(∈(compat.val), versions)
+            latest ∈ compat.val && return (; name, compat_state = :uptodate, ok=true, latest, versions, versions_compatible, compat)
+            return (; name, compat_state = :outdated, ok=false, latest, versions, versions_compatible, compat)
         end
     end
 end
@@ -91,7 +96,7 @@ function check(pkg_dir::String)
             elseif c.compat_state == :missing
                 @info "[compat] missing" name=c.name
             elseif c.compat_state == :outdated
-                @info "[compat] outdated" name=c.name compat=c.compat compat_spec=c.compat_spec latest=c.latest
+                @info "[compat] outdated" name=c.name compat=c.compat latest=c.latest
             else
                 @assert c.ok
             end
@@ -103,11 +108,11 @@ function check(pkg_dir::String)
             if c.compat_state == :missing
                 println("$(c.name) = \"$(generate_new_compat(c.latest))\"")
             elseif c.compat_state == :outdated
-                println("$(c.name) = \"$(merge_old_new_compat(c.compat, c.latest))\"")
+                println("$(c.name) = \"$(merge_old_new_compat(c.compat.str, c.latest))\"")
             elseif c.compat_state == :uptodate
-                println("$(c.name) = \"$(c.compat)\"")
+                println("$(c.name) = \"$(c.compat.str)\"")
             elseif c.compat_state == :not_found
-                isempty(c.compat) || println("$(c.name) = \"$(c.compat)\"")
+                c.compat.str === nothing || println("$(c.name) = \"$(c.compat.str)\"")
             else
                 @assert c.compat_state == :stdlib
             end
