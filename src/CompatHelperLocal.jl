@@ -82,10 +82,10 @@ end
 is_ok(::Union{IsStdlib, Uptodate}) = true
 is_ok(::Union{Missing, Outdated, PackageNotFound}) = false
 
-generate_new_compat(v::VersionNumber)::String = string(Base.thispatch(v))
+generate_new_compat(v::VersionNumber; is_julia)::String = is_julia ? "$(v.major).$(v.minor)" : string(Base.thispatch(v))
 
-generate_compat_str(c::Missing) = generate_new_compat(maximum(c.versions))
-generate_compat_str(c::Outdated) = "$(c.compat.str), $(generate_new_compat(maximum(c.versions)))"
+generate_compat_str(c::Missing) = generate_new_compat(maximum(c.versions); is_julia=c.name=="julia")
+generate_compat_str(c::Outdated) = "$(c.compat.str), $(generate_new_compat(maximum(c.versions); is_julia=c.name=="julia"))"
 generate_compat_str(c::Uptodate) = c.compat.str
 generate_compat_str(c::PackageNotFound) = c.compat.str
 generate_compat_str(c::IsStdlib) = nothing
