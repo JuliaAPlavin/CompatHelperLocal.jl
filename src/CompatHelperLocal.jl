@@ -82,31 +82,25 @@ end
 is_ok(::Union{IsStdlib, Uptodate}) = true
 is_ok(::Union{Missing, Outdated, PackageNotFound}) = false
 
-function generate_new_compat(v::VersionNumber)::String
-    if v.major == 0 && v.minor == 0
-        return "0.0.$(v.patch)"
-    else
-        return "$(v.major).$(v.minor)"
-    end
-end
-
-function merge_old_new_compat(old::String, latest::VersionNumber)::String
-    "$(old), $(generate_new_compat(latest))"
-end
+generate_new_compat(v::VersionNumber)::String = (v.major, v.minor) == (0, 0) ? "0.0.$(v.patch)" : "$(v.major).$(v.minor)"
 
 generate_compat_str(c::Missing) = generate_new_compat(maximum(c.versions))
-generate_compat_str(c::Outdated) = merge_old_new_compat(c.compat.str, maximum(c.versions))
+generate_compat_str(c::Outdated) = "$(c.compat.str), $(generate_new_compat(maximum(c.versions)))"
 generate_compat_str(c::Uptodate) = c.compat.str
 generate_compat_str(c::PackageNotFound) = c.compat.str
 generate_compat_str(c::IsStdlib) = nothing
+
+info_message_args(c::CompatStates.PackageNotFound) = ("package in [deps] but not found in registries", (;c.name))
+info_message_args(c::CompatStates.Missing) = ("[compat] missing", (;c.name))
+info_message_args(c::CompatStates.Outdated) = ("[compat] outdated", (;c.name, c.compat, latest=maximum(c.versions)))
 end
-import .CompatStates: is_ok, generate_compat_str
+import .CompatStates: is_ok, generate_compat_str, info_message_args
 
 
 function gather_compats(project_file)
     project = Pkg.Types.read_project(project_file)
-    return map([collect(project.deps); [("julia", uuid4())]]) do (name, uuid)
-        Pkg.Types.is_stdlib(uuid) && return CompatStates.IsStdlib(; name)
+    return map([collect(project.deps); [("julia", nothing)]]) do (name, uuid)
+        uuid !== nothing && Pkg.Types.is_stdlib(uuid) && return CompatStates.IsStdlib(; name)
         compat = get_compat_full(project, name)
         versions = get_versions_in_repository(name)
         isempty(versions) && return CompatStates.PackageNotFound(; name, compat)
@@ -132,12 +126,8 @@ function check(pkg_dir::String)
         all_ok = false
         @warn "Project has issues with [compat]" project=f
 
-        message_args(c::CompatStates.PackageNotFound) = ("package in [deps] but not found in registries", (;c.name))
-        message_args(c::CompatStates.Missing) = ("[compat] missing", (;c.name))
-        message_args(c::CompatStates.Outdated) = ("[compat] outdated", (;c.name, c.compat, latest=maximum(c.versions)))
-
         for c in sort(filter(!is_ok, dep_compats), by=c -> (string(typeof(c)), c.name))
-            msg, args = message_args(c)
+            msg, args = info_message_args(c)
             @info msg args...
         end
         println()
