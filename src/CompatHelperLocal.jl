@@ -173,6 +173,26 @@ function get_compats_combinations(project_file)
     end
 end
 
+function get_all_compats_combinations(project_file, depnames::Union{Vector{String},Nothing}=nothing)
+    compats = gather_compats(project_file)
+    compats = filter(c -> !(c isa CompatStates.IsStdlib) && c.name != "julia", compats)
+    @assert all(c -> !isempty(c.versions), compats)
+    if !isnothing(depnames)
+        compats = filter(c -> c.name ∈ depnames, compats)
+    end
+    mapreduce(vcat, compats) do c
+        cvers = CompatStates.compatible_versions(c) |> sort
+        map(cvers) do ver
+            ver = ver |> Base.thispatch
+            Dict(c.name => "=$(ver)")
+        end
+    end
+end
+
+function compats_combinations_to_gha_string(compats)
+    "::set-output name=matrix::{\"compats\": [ $(join(["\"$(replace(repr(c), "\"" => "\\\""))\"" for c in compats], ", ")) ]}"
+end
+
 function copy_project_change_compat(orig_proj_dir, new_proj_dir, compat::Dict)
     @info "Copying project files $orig_proj_dir => $new_proj_dir"
     cp(orig_proj_dir, new_proj_dir, force=true)
@@ -189,18 +209,33 @@ function copy_project_change_compat(orig_proj_dir, new_proj_dir, compat::Dict)
     Pkg.Types.write_project(proj, project_file)
 end
 
-test_compats_combinations(m::Module) = test_compats_combinations(pathof(m) |> dirname |> dirname)
-function test_compats_combinations(proj_dir::AbstractString)
+test_compats_combinations(m::Module, args...; kwargs...) = test_compats_combinations(pathof(m) |> dirname |> dirname, args...; kwargs...)
+function test_compats_combinations(
+        proj_dir::AbstractString,
+        new_compats=get_compats_combinations(joinpath(proj_dir, "Project.toml"));
+        throw=true
+    )
     prev_env = basename(Base.active_project())
     try
-        compats = get_compats_combinations(joinpath(proj_dir, "Project.toml"))
-        @info "Going to test with modified [compat]s" length(compats)
-        for compat in compats
+        @info "Going to test with modified [compat]s" length(new_compats)
+        map(new_compats) do compat
             new_dir = mktempdir()
             @info "Testing with modified [compat]" compat dir=new_dir
             copy_project_change_compat(proj_dir, new_dir, compat)
             Pkg.activate(new_dir)
-            Pkg.test()
+            try
+                Pkg.resolve()
+            catch exc
+                throw && rethrow()
+                return (;compat, msg="couldn't resolve", exc)
+            end
+            try
+                Pkg.test()
+            catch exc
+                throw && rethrow()
+                return (;compat, msg="tests failed", exc)
+            end
+            return (compat, msg="ok", exc=nothing)
         end
     finally
         @info "Restoring previous environment" prev_env
