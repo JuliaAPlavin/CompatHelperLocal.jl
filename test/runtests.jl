@@ -18,7 +18,7 @@ import CompatHelperLocal as CHL
 CSV = "\d\.\d\.\d"
 DataFrames = "1\.\d\.\d"
 OrderedCollections = "1\.4\.\d"
-Scratch = "0\.1, 0\.2, 1\.\d\.\d"
+Scratch = "0\.1, 0\.2, 1"
 xxxPackageXXX = "1\.0"
 julia = "1\.[6789]"
 """, compat_block)

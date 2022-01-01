@@ -14,5 +14,5 @@ xxxPackageXXX = "6c6a2e73-6563-6170-7368-637461726355"
 YYYPackageYYY = "6c6a2e73-6563-6170-7368-637461726354"
 
 [compat]
-Scratch = "0.1, 0.2"
+Scratch = "0.1, 0.2, 1"
 xxxPackageXXX = "1.0"
