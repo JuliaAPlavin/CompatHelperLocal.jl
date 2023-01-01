@@ -27,7 +27,7 @@ import CompatHelperLocal as CHL
 
     compat_block = CHL.generate_compat_block(dep_compats)
     @test occursin(r"""\[compat\]
-CSV = "\d\.\d\.\d+"
+CSV = "\d\.\d+\.\d+"
 DataFrames = "1\.\d\.\d"
 OrderedCollections = "1\.4\.\d"
 Scratch = "0\.1, 0\.2, 1"
