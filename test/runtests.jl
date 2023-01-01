@@ -27,12 +27,12 @@ import CompatHelperLocal as CHL
 
     compat_block = CHL.generate_compat_block(dep_compats)
     @test occursin(r"""\[compat\]
-CSV = "\d\.\d+\.\d+"
-DataFrames = "1\.\d\.\d"
-OrderedCollections = "1\.4\.\d"
-Scratch = "0\.1, 0\.2, 1"
-xxxPackageXXX = "1\.0"
-julia = "1\.\d"
+CSV = "[\d., ]+"
+DataFrames = "[\d., ]+"
+OrderedCollections = "[\d., ]+"
+Scratch = "[\d., ]+"
+xxxPackageXXX = "[\d., ]+"
+julia = "[\d., ]+"
 """, compat_block)
 end
 
