@@ -162,14 +162,18 @@ end
 
 
 
-function get_compats_combinations(project_file)
+function get_compats_combinations(project_file; only_resolveable=false)
     compats = gather_compats(project_file)
     compats = filter(c -> !(c isa CompatStates.IsStdlib) && c.name != "julia", compats)
     @assert all(c -> !isempty(c.versions), compats)
-    map(Iterators.product(compats, 1:2)) do (c, i)
+    map(Iterators.product(compats, [identity, reverse])) do (c, f)
         cvers = CompatStates.compatible_versions(c)
-        ver = extrema(cvers)[i] |> Base.thispatch
-        Dict(c.name => "=$(ver)")
+        for ver in cvers |> sort |> f
+            comp = Dict(c.name => "=$(Base.thispatch(ver))")
+            if !only_resolveable || can_resolve(dirname(project_file), comp)
+                return comp
+            end
+        end
     end
 end
 
@@ -209,10 +213,24 @@ function copy_project_change_compat(orig_proj_dir, new_proj_dir, compat::Dict)
     Pkg.Types.write_project(proj, project_file)
 end
 
+function can_resolve(proj_dir, compat; new_dir=mktempdir())
+    prev_env = basename(Base.active_project())
+    copy_project_change_compat(proj_dir, new_dir, compat)
+    Pkg.activate(new_dir)
+    try
+        Pkg.resolve()
+        return true
+    catch exc
+        return false
+    finally
+        Pkg.activate(prev_env)
+    end
+end
+
 test_compats_combinations(m::Module, args...; kwargs...) = test_compats_combinations(pathof(m) |> dirname |> dirname, args...; kwargs...)
 function test_compats_combinations(
         proj_dir::AbstractString,
-        new_compats=get_compats_combinations(joinpath(proj_dir, "Project.toml"));
+        new_compats=get_compats_combinations(joinpath(proj_dir, "Project.toml"); only_resolveable=true);
         throw=true
     )
     prev_env = basename(Base.active_project())
