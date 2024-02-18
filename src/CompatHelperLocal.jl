@@ -79,7 +79,7 @@ import .CompatStates: is_ok, generate_compat_str, info_message_args
 
 function gather_compats(project_file)
     project = Pkg.Types.read_project(project_file)
-    return map([collect(project.deps); [("julia", nothing)]]) do (name, uuid)
+    return map([collect(project.deps); collect(project.weakdeps); [("julia", nothing)]]) do (name, uuid)
         uuid !== nothing && Pkg.Types.is_stdlib(uuid) && return CompatStates.IsStdlib(; name)
         compat = get_compat_full(project, name)
         versions = get_versions_in_repository(name)
