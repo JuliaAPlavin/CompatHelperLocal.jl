@@ -121,9 +121,9 @@ generate_compat_dict(projectfile::String) = generate_compat_dict(gather_compats(
 
 """Check [compat] entries for package in `pkg_dir`.
 Reports issues and returns whether checks pass."""
-function check(pkg_dir::String; quiet=false)
+function check(pkg_dir::String; quiet=false, checktest=true)
     all_ok = true
-    for dir in [pkg_dir, joinpath(pkg_dir, "test")]
+    for dir in (checktest ? [pkg_dir, joinpath(pkg_dir, "test")] : [pkg_dir])
         f = Pkg.Types.projectfile_path(dir, strict=true)
         isnothing(f) && continue
         dep_compats = gather_compats(f)
@@ -146,18 +146,18 @@ end
 
 """Check [compat] entries for package that contains module `m`.
 Reports issues and returns whether checks pass."""
-check(m::Module) = check(pkgdir(m))
+check(m::Module; kwargs...) = check(pkgdir(m); kwargs...)
 
 """Check [compat] entries for current package.
 Reports issues and returns whether checks pass.
 Can be called from the package itself, or from its tests."""
-macro check()
+macro check(args...)
     file = String(__source__.file)
     dir = dirname(file)
     if basename(dir) == "test"
         dir = dirname(dir)
     end
-    :(check($dir))
+    :(check($dir; $(esc.(args)...)))
 end
 
 

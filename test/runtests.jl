@@ -3,6 +3,8 @@ import Pkg
 import CompatHelperLocal as CHL
 
 @time CHL.@check()
+@time CHL.@check(checktest=true)
+@time CHL.@check(checktest=false)
 
 @testset begin
     @test CHL.CompatStates.generate_new_compat(v"1.2.3"; is_julia=false) == "1.2.3"
