@@ -104,6 +104,16 @@ function generate_compat_block(dep_compats::Vector{<:CompatStates.State})
     return join(lines, "\n") * "\n"
 end
 
+function report_compat_issues(dep_compats::Vector{<:CompatStates.State})
+    for (msg, args) in generate_compat_issues(dep_compats)
+        @info msg args...
+    end
+    println()
+    println("Suggested content:")
+    println(generate_compat_block(dep_compats))
+    println()
+end
+
 function generate_compat_dict(dep_compats::Vector{<:CompatStates.State})
     dct = Dict()
     for c in sort(dep_compats, by=c -> c.name == "julia" ? "я" : c.name)  # put julia latest in the list
@@ -116,31 +126,58 @@ end
 generate_compat_dict(projectfile::String) = generate_compat_dict(gather_compats(projectfile))
 
 """
-    check(pkg_dir::String; quiet=false, checktest=true)
+    check(pkg_dir::String; quiet=false, checktest=nothing)
 
 Check [compat] entries for package in `pkg_dir`.
+Checks both main Project.toml and test/Project.toml (if present).
+For test dependencies, only recommends compats for packages not in main Project.toml.
 Reports issues and returns whether checks pass.
+
+Note: The `checktest` parameter is deprecated and ignored.
 """
-function check(pkg_dir::String; quiet=false, checktest=true)
+function check(pkg_dir::String; quiet=false, checktest=nothing)
+    if checktest !== nothing
+        @warn "checktest parameter is deprecated and ignored. @check now always checks both main and test Project.toml files." maxlog=1
+    end
+
     all_ok = true
-    for dir in (checktest ? [pkg_dir, joinpath(pkg_dir, "test")] : [pkg_dir])
-        f = Pkg.Types.projectfile_path(dir, strict=true)
-        isnothing(f) && continue
-        dep_compats = gather_compats(f)
-        all(is_ok, dep_compats) && continue
+
+    # First, process main project
+    main_project_file = Pkg.Types.projectfile_path(pkg_dir, strict=true)
+    if isnothing(main_project_file)
+        @warn "No Project.toml found in $pkg_dir"
+        return false
+    end
+
+    dep_compats = gather_compats(main_project_file)
+
+    if !all(is_ok, dep_compats)
         all_ok = false
         if !quiet
-            @warn "Project has issues with [compat]" project=f
-
-            for (msg, args) in generate_compat_issues(dep_compats)
-                @info msg args...
-            end
-            println()
-            println("Suggested content:")
-            println(generate_compat_block(dep_compats))
-            println()
+            @warn "Issues with project's [compat]" project=main_project_file
+            report_compat_issues(dep_compats)
         end
     end
+
+    # Then, process test project (if it exists)
+    test_dir = joinpath(pkg_dir, "test")
+    test_project_file = Pkg.Types.projectfile_path(test_dir, strict=true)
+
+    if !isnothing(test_project_file)
+        all_test_compats = gather_compats(test_project_file)
+        # Filter to only test-exclusive dependencies
+        main_package_names = Set(c.name for c in dep_compats)
+        dep_compats = filter(c -> !(c.name in main_package_names), all_test_compats)
+
+        if !all(is_ok, dep_compats)
+            all_ok = false
+            if !quiet
+                @warn "Issues with test project's [compat]" project=test_project_file
+                report_compat_issues(dep_compats)
+            end
+        end
+    end
+
     return all_ok
 end
 
@@ -148,6 +185,8 @@ end
     check(m::Module; kwargs...)
 
 Check [compat] entries for package that contains module `m`.
+Checks both main Project.toml and test/Project.toml (if present).
+For test dependencies, only recommends compats for packages not in main Project.toml.
 Reports issues and returns whether checks pass.
 """
 check(m::Module; kwargs...) = check(pkgdir(m); kwargs...)
@@ -156,6 +195,8 @@ check(m::Module; kwargs...) = check(pkgdir(m); kwargs...)
     @check(args...)
 
 Check [compat] entries for current package.
+Checks both main Project.toml and test/Project.toml (if present).
+For test dependencies, only recommends compats for packages not in main Project.toml.
 Reports issues and returns whether checks pass.
 Can be called from the package itself, or from its tests.
 """

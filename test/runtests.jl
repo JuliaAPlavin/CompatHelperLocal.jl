@@ -3,8 +3,16 @@ import Pkg
 import CompatHelperLocal as CHL
 
 @time CHL.@check()
-@time CHL.@check(checktest=true)
-@time CHL.@check(checktest=false)
+
+# Test deprecated checktest parameter
+@testset "checktest deprecation" begin
+    # Should show deprecation warning but still work
+    @test_logs (:warn, r"checktest parameter is deprecated") match_mode=:any CHL.@check(checktest=true, quiet=true)
+    @test_logs (:warn, r"checktest parameter is deprecated") match_mode=:any CHL.@check(checktest=false, quiet=true)
+    # Verify the function still works with old parameter
+    @test CHL.check(pwd(), checktest=true, quiet=true) isa Bool
+    @test CHL.check(pwd(), checktest=false, quiet=true) isa Bool
+end
 
 @testset begin
     @test CHL.CompatStates.generate_new_compat(v"1.2.3"; include_patch=true) == "1.2.3"
@@ -111,13 +119,56 @@ julia = "[\d., ]+"
         @test xxx_issue[1][1] == "package in [deps] but not found in registries"
         @test xxx_issue[1][2] == (name="xxxPackageXXX",)
         
-        csv_issue = filter(((msg, args),) -> args.name == "CSV", issues)  
+        csv_issue = filter(((msg, args),) -> args.name == "CSV", issues)
         @test length(csv_issue) == 1
         @test csv_issue[1][1] == "[compat] missing"
         @test csv_issue[1][2] == (name="CSV",)
     end
 end
 
-@time CHL.check("./test_package_dir/")
+# Test with a package that has both main and test Project.toml
+@testset "main + test filtering integration" begin
+    test_logger = Test.TestLogger()
 
-# run(`$(Base.julia_cmd()) ../docs/make.jl`)
+    # Run check with logger, suppressing stdout/stderr
+    result = Test.with_logger(test_logger) do
+        CHL.check("./test_package_dir/")
+    end
+
+    @test !result
+
+    logs = test_logger.logs
+
+    # Check that both projects are warned about
+    @test any(l -> l.level == Base.CoreLogging.Warn && occursin("test_package_dir/Project.toml", string(get(l.kwargs, :project, ""))), logs)
+    @test any(l -> l.level == Base.CoreLogging.Warn && occursin("test_package_dir/test/Project.toml", string(get(l.kwargs, :project, ""))), logs)
+
+    # Find where test project warning starts
+    test_warn_idx = findfirst(l -> l.level == Base.CoreLogging.Warn && occursin("test/Project.toml", string(get(l.kwargs, :project, ""))), logs)
+    @test !isnothing(test_warn_idx)
+
+    # Logs before test warning are from main project
+    main_logs = logs[1:test_warn_idx-1]
+    main_package_names = [get(l.kwargs, :name, nothing) for l in main_logs if l.level == Base.CoreLogging.Info]
+
+    # Logs after test warning are from test project
+    test_logs = logs[test_warn_idx+1:end]
+    test_package_names = [get(l.kwargs, :name, nothing) for l in test_logs if l.level == Base.CoreLogging.Info]
+
+    # Main project should mention CSV, DataFrames, etc
+    @test "CSV" ∈ main_package_names
+    @test "DataFrames" ∈ main_package_names
+    @test "OrderedCollections" ∈ main_package_names
+
+    # Test project should only mention test-exclusive packages
+    @test "JSON3" ∈ test_package_names
+    @test "Test" ∈ test_package_names
+
+    # Test project should NOT mention packages from main
+    @test "CSV" ∉ test_package_names
+    @test "OrderedCollections" ∉ test_package_names
+    @test "Scratch" ∉ test_package_names
+    # Even packages in both should be filtered
+    @test "DataFrames" ∉ test_package_names
+    @test "Dates" ∉ test_package_names
+end
