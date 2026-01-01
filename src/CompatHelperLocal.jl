@@ -1,12 +1,5 @@
 module CompatHelperLocal
 import Pkg
-using UUIDs: uuid4
-
-using DocStringExtensions
-@template DEFAULT = """
-$(TYPEDSIGNATURES)
-$(DOCSTRING)
-"""
 
 function get_versions_in_repository(pkg_name::String)
     if pkg_name == "julia"
@@ -119,8 +112,12 @@ function generate_compat_dict(dep_compats::Vector{<:CompatStates.State})
 end
 generate_compat_dict(projectfile::String) = generate_compat_dict(gather_compats(projectfile))
 
-"""Check [compat] entries for package in `pkg_dir`.
-Reports issues and returns whether checks pass."""
+"""
+    check(pkg_dir::String; quiet=false, checktest=true)
+
+Check [compat] entries for package in `pkg_dir`.
+Reports issues and returns whether checks pass.
+"""
 function check(pkg_dir::String; quiet=false, checktest=true)
     all_ok = true
     for dir in (checktest ? [pkg_dir, joinpath(pkg_dir, "test")] : [pkg_dir])
@@ -144,13 +141,21 @@ function check(pkg_dir::String; quiet=false, checktest=true)
     return all_ok
 end
 
-"""Check [compat] entries for package that contains module `m`.
-Reports issues and returns whether checks pass."""
+"""
+    check(m::Module; kwargs...)
+
+Check [compat] entries for package that contains module `m`.
+Reports issues and returns whether checks pass.
+"""
 check(m::Module; kwargs...) = check(pkgdir(m); kwargs...)
 
-"""Check [compat] entries for current package.
+"""
+    @check(args...)
+
+Check [compat] entries for current package.
 Reports issues and returns whether checks pass.
-Can be called from the package itself, or from its tests."""
+Can be called from the package itself, or from its tests.
+"""
 macro check(args...)
     file = String(__source__.file)
     dir = dirname(file)
