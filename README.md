@@ -1,39 +1,31 @@
+# CompatHelperLocal.jl
 
-<a id='Overview'></a>
+**Keep your `[compat]` entries up to date, locally.**
 
-<a id='Overview-1'></a>
+Helps keep `[compat]` entries in your `Project.toml` up to date. Reports when a `[compat]` is missing or incompatible with the latest available version of the corresponding dependency.
 
-# Overview
+## Key Features
 
+- **Local-first**: No GitHub integration needed, runs directly in your development environment
+- **Root & test support**: Checks both main and test `Project.toml` files automatically, avoids duplicate suggestions
+- **One-line integration**: Just add `@check()` to your test suite, no extra setup required
 
-Helps keep `[compat]` entries in your `Project.toml` up to date. Notifies when a `[compat]` is absent or incompatible with the latest available version of the corresponding dependency.
+## Usage
 
-
-<a id='Basic-usage'></a>
-
-<a id='Basic-usage-1'></a>
-
-# Basic usage
-
-
-Put the following lines to `<your package>/test/runtests.jl`:
-
+Put the following lines in `<your package>/test/runtests.jl`:
 
 ```julia
 import CompatHelperLocal as CHL
 CHL.@check()
 ```
 
+## Related Projects
 
-<a id='Example'></a>
+- [**CompatHelper.jl**](https://github.com/JuliaRegistries/CompatHelper.jl): A GitHub bot that automatically opens pull requests to update your `[compat]` entries. Suitable for GitHub-centered workflows, while CompatHelperLocal.jl is ideal for local development and doesn't rely on external services.
 
-<a id='Example-1'></a>
-
-# Example
-
+## Example Output
 
 `Project.toml` content:
-
 
 ```
 name = "TestPackage"
@@ -56,15 +48,12 @@ Scratch = "0.1, 0.2"
 xxxPackageXXX = "1.0"
 ```
 
-
 `CompatHelperLocal` output:
-
 
 ```julia
 import CompatHelperLocal as CHL
 CHL.@check()
 ```
-
 
 ```
 ┌ Warning: Project has issues with [compat]
@@ -96,51 +85,3 @@ Scratch = "0.1, 0.2, 1.0"
 xxxPackageXXX = "1.0"
 julia = "1.6"
 ```
-
-
-<a id='Reference'></a>
-
-<a id='Reference-1'></a>
-
-# Reference
-
-<a id='CompatHelperLocal.check-Tuple{Module}' href='#CompatHelperLocal.check-Tuple{Module}'>#</a>
-**`CompatHelperLocal.check`** &mdash; *Method*.
-
-
-
-```julia
-check(m::Module) -> Bool
-
-```
-
-Check [compat] entries for package that contains module `m`. Reports issues and returns whether checks pass.
-
-
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/ff22009310a504cd77b7ec8946321665bf962d3c/src/CompatHelperLocal.jl#L154' class='documenter-source'>source</a><br>
-
-<a id='CompatHelperLocal.check-Tuple{String}' href='#CompatHelperLocal.check-Tuple{String}'>#</a>
-**`CompatHelperLocal.check`** &mdash; *Method*.
-
-
-
-```julia
-check(pkg_dir::String) -> Bool
-
-```
-
-Check [compat] entries for package in `pkg_dir`. Reports issues and returns whether checks pass.
-
-
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/ff22009310a504cd77b7ec8946321665bf962d3c/src/CompatHelperLocal.jl#L131' class='documenter-source'>source</a><br>
-
-<a id='CompatHelperLocal.@check-Tuple{}' href='#CompatHelperLocal.@check-Tuple{}'>#</a>
-**`CompatHelperLocal.@check`** &mdash; *Macro*.
-
-
-
-Check [compat] entries for current package. Reports issues and returns whether checks pass. Can be called from the package itself, or from its tests.
-
-
-<a target='_blank' href='https://github.com/aplavin/CompatHelperLocal.jl/blob/ff22009310a504cd77b7ec8946321665bf962d3c/src/CompatHelperLocal.jl#L158' class='documenter-source'>source</a><br>
-
