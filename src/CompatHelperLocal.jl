@@ -127,15 +127,15 @@ function check(pkg_dir::String; quiet=false, checktest=true)
         all(is_ok, dep_compats) && continue
         all_ok = false
         if !quiet
-        @warn "Project has issues with [compat]" project=f
+            @warn "Project has issues with [compat]" project=f
 
-        for (msg, args) in generate_compat_issues(dep_compats)
-            @info msg args...
-        end
-        println()
-        println("Suggested content:")
-        println(generate_compat_block(dep_compats))
-        println()
+            for (msg, args) in generate_compat_issues(dep_compats)
+                @info msg args...
+            end
+            println()
+            println("Suggested content:")
+            println(generate_compat_block(dep_compats))
+            println()
         end
     end
     return all_ok
