@@ -1,9 +1,13 @@
 module CompatHelperLocal
 import Pkg
 
-function get_versions_in_repository(pkg_name::String)
-    if pkg_name == "julia"
-        return [VERSION]
+# update to latest Julia LTS whenever one comes out:
+const JULIA_VERSION_SUGGESTED = v"1.10"
+
+function get_versions_in_repository(pkg_name::String, is_stdlib::Bool)
+    # for Julia and stdlibs, always recommend the fixed Julia version
+    if pkg_name == "julia" || is_stdlib
+        return [JULIA_VERSION_SUGGESTED]
     end
     return mapreduce(vcat, Pkg.Registry.reachable_registries()) do reg
         pkgs = filter(((uuid, pkg),) -> pkg.name == pkg_name, reg.pkgs)
@@ -25,43 +29,42 @@ abstract type State end
 Base.@kwdef struct PackageNotFound <: State
     name::String
     compat
-end
-
-Base.@kwdef struct IsStdlib <: State
-    name::String
+    is_stdlib::Bool = false
 end
 
 Base.@kwdef struct Missing <: State
     name::String
     compat
     versions::Vector{VersionNumber}
+    is_stdlib::Bool = false
 end
 
 Base.@kwdef struct Uptodate <: State
     name::String
     compat
     versions::Vector{VersionNumber}
+    is_stdlib::Bool = false
 end
 
 Base.@kwdef struct Outdated <: State
     name::String
     compat
     versions::Vector{VersionNumber}
+    is_stdlib::Bool = false
 end
 
-is_ok(::Union{IsStdlib, Uptodate}) = true
+is_ok(::Uptodate) = true
 is_ok(::Union{Missing, Outdated, PackageNotFound}) = false
 
 all_versions(c::Union{Missing, Uptodate, Outdated}) = c.versions
 compatible_versions(c::Union{Missing, Uptodate, Outdated}) = filter(∈(c.compat.val), c.versions)
 
-generate_new_compat(v::VersionNumber; is_julia)::String = is_julia ? "$(v.major).$(v.minor)" : string(Base.thispatch(v))
+generate_new_compat(v::VersionNumber; include_patch::Bool)::String = include_patch ? string(Base.thispatch(v)) : "$(v.major).$(v.minor)" 
 
-generate_compat_str(c::Missing) = generate_new_compat(maximum(c.versions); is_julia=c.name=="julia")
-generate_compat_str(c::Outdated) = "$(c.compat.str), $(generate_new_compat(maximum(c.versions); is_julia=c.name=="julia"))"
+generate_compat_str(c::Missing) = generate_new_compat(maximum(c.versions); include_patch=c.name != "julia" && !c.is_stdlib)
+generate_compat_str(c::Outdated) = "$(c.compat.str), $(generate_new_compat(maximum(c.versions); include_patch=c.name != "julia" && !c.is_stdlib))"
 generate_compat_str(c::Uptodate) = c.compat.str
 generate_compat_str(c::PackageNotFound) = c.compat.str
-generate_compat_str(c::IsStdlib) = nothing
 
 info_message_args(c::CompatStates.PackageNotFound) = ("package in [deps] but not found in registries", (;c.name))
 info_message_args(c::CompatStates.Missing) = ("[compat] missing", (;c.name))
@@ -73,16 +76,16 @@ import .CompatStates: is_ok, generate_compat_str, info_message_args
 function gather_compats(project_file)
     project = Pkg.Types.read_project(project_file)
     return map([collect(project.deps); collect(project.weakdeps); [("julia", nothing)]]) do (name, uuid)
-        uuid !== nothing && Pkg.Types.is_stdlib(uuid) && return CompatStates.IsStdlib(; name)
+        is_stdlib = uuid !== nothing && Pkg.Types.is_stdlib(uuid)
         compat = get_compat_full(project, name)
-        versions = get_versions_in_repository(name)
-        isempty(versions) && return CompatStates.PackageNotFound(; name, compat)
+        versions = get_versions_in_repository(name, is_stdlib)
+        isempty(versions) && return CompatStates.PackageNotFound(; name, compat, is_stdlib)
         return if compat.str === nothing
-            CompatStates.Missing(; name, compat, versions)
+            CompatStates.Missing(; name, compat, versions, is_stdlib)
         elseif maximum(versions) ∈ compat.val
-            CompatStates.Uptodate(; name, compat, versions)
+            CompatStates.Uptodate(; name, compat, versions, is_stdlib)
         else
-            CompatStates.Outdated(; name, compat, versions)
+            CompatStates.Outdated(; name, compat, versions, is_stdlib)
         end
     end
 end
@@ -169,7 +172,7 @@ end
 
 function get_compats_combinations(project_file; only_resolveable=false)
     compats = gather_compats(project_file)
-    compats = filter(c -> !(c isa CompatStates.IsStdlib) && c.name != "julia", compats)
+    compats = filter(c -> c.name != "julia" && !c.is_stdlib, compats)
     @assert all(c -> !isempty(c.versions), compats)
     map(Iterators.product(compats, [identity, reverse])) do (c, f)
         cvers = CompatStates.compatible_versions(c)
@@ -184,7 +187,7 @@ end
 
 function get_all_compats_combinations(project_file, depnames::Union{Vector{String},Nothing}=nothing)
     compats = gather_compats(project_file)
-    compats = filter(c -> !(c isa CompatStates.IsStdlib) && c.name != "julia", compats)
+    compats = filter(c -> c.name != "julia" && !c.is_stdlib, compats)
     @assert all(c -> !isempty(c.versions), compats)
     if !isnothing(depnames)
         compats = filter(c -> c.name ∈ depnames, compats)

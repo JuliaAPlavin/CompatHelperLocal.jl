@@ -7,13 +7,13 @@ import CompatHelperLocal as CHL
 @time CHL.@check(checktest=false)
 
 @testset begin
-    @test CHL.CompatStates.generate_new_compat(v"1.2.3"; is_julia=false) == "1.2.3"
-    @test CHL.CompatStates.generate_new_compat(v"0.0.3"; is_julia=false) == "0.0.3"
-    @test CHL.CompatStates.generate_new_compat(v"0.1.3"; is_julia=false) == "0.1.3"
-    @test CHL.CompatStates.generate_new_compat(v"1.2.3+5"; is_julia=false) == "1.2.3"
-    @test CHL.CompatStates.generate_new_compat(v"1.2.3"; is_julia=true) == "1.2"
-    @test CHL.CompatStates.generate_new_compat(v"0.1.3"; is_julia=true) == "0.1"
-    @test CHL.CompatStates.generate_new_compat(v"1.2.3+5"; is_julia=true) == "1.2"
+    @test CHL.CompatStates.generate_new_compat(v"1.2.3"; include_patch=true) == "1.2.3"
+    @test CHL.CompatStates.generate_new_compat(v"0.0.3"; include_patch=true) == "0.0.3"
+    @test CHL.CompatStates.generate_new_compat(v"0.1.3"; include_patch=true) == "0.1.3"
+    @test CHL.CompatStates.generate_new_compat(v"1.2.3+5"; include_patch=true) == "1.2.3"
+    @test CHL.CompatStates.generate_new_compat(v"1.2.3"; include_patch=false) == "1.2"
+    @test CHL.CompatStates.generate_new_compat(v"0.1.3"; include_patch=false) == "0.1"
+    @test CHL.CompatStates.generate_new_compat(v"1.2.3+5"; include_patch=false) == "1.2"
 
     projfile = "./test_package_dir/Project.toml"
     dep_compats = CHL.gather_compats(projfile)
@@ -31,6 +31,8 @@ import CompatHelperLocal as CHL
     @test occursin(r"""\[compat\]
 CSV = "[\d., ]+"
 DataFrames = "[\d., ]+"
+Dates = "[\d., ]+"
+Downloads = "[\d., ]+"
 OrderedCollections = "[\d., ]+"
 Scratch = "[\d., ]+"
 xxxPackageXXX = "[\d., ]+"
@@ -58,23 +60,30 @@ julia = "[\d., ]+"
         @test yyy_compat isa CHL.CompatStates.PackageNotFound  # fake package not in registries
         
         dates_compat = compats[findfirst(c -> c.name == "Dates", compats)]
-        @test dates_compat isa CHL.CompatStates.IsStdlib
+        @test dates_compat isa CHL.CompatStates.Missing  # stdlib with no compat
+        @test dates_compat.is_stdlib == true
+        @test dates_compat.versions == [CHL.JULIA_VERSION_SUGGESTED]
+
+        downloads_compat = compats[findfirst(c -> c.name == "Downloads", compats)]
+        @test downloads_compat isa CHL.CompatStates.Missing  # stdlib with no compat
+        @test downloads_compat.is_stdlib == true
+        @test downloads_compat.versions == [CHL.JULIA_VERSION_SUGGESTED]
         
         csv_compat = compats[findfirst(c -> c.name == "CSV", compats)]
         @test csv_compat isa CHL.CompatStates.Missing  # no compat, so missing
         
         julia_compat = compats[findfirst(c -> c.name == "julia", compats)]
         @test julia_compat isa CHL.CompatStates.Missing  # julia compat missing
-        
-        # Test that versions are populated for non-stdlib packages
+        @test julia_compat.versions == [CHL.JULIA_VERSION_SUGGESTED]
+
+        # Test that versions are populated for all packages except PackageNotFound
         for c in compats
-            if !(c isa CHL.CompatStates.IsStdlib) && c.name != "julia"
-                if c isa CHL.CompatStates.PackageNotFound
-                    # PackageNotFound doesn't have versions field
-                    @test !hasfield(typeof(c), :versions)
-                else
-                    @test hasfield(typeof(c), :versions)
-                end
+            if c isa CHL.CompatStates.PackageNotFound
+                # PackageNotFound doesn't have versions field
+                @test !hasfield(typeof(c), :versions)
+            else
+                @test hasfield(typeof(c), :versions)
+                @test !isempty(c.versions)
             end
         end
     end
@@ -87,7 +96,8 @@ julia = "[\d., ]+"
         # Find specific issues for packages we know about
         issue_names = map(((msg, args),) -> args.name, issues)
         # These packages should have issues (missing compat or not found)
-        expected_issue_names = ["CSV", "DataFrames", "OrderedCollections", "julia", "xxxPackageXXX", "YYYPackageYYY"]
+        # Now includes Dates and Downloads since they're stdlib with missing compat
+        expected_issue_names = ["CSV", "DataFrames", "Dates", "Downloads", "OrderedCollections", "julia", "xxxPackageXXX", "YYYPackageYYY"]
         @test issetequal(issue_names, expected_issue_names)
         
         # Check message types
