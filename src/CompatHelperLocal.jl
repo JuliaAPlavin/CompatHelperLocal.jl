@@ -15,7 +15,11 @@ function get_versions_in_repository(pkg_name::String, is_stdlib::Bool)
             return []
         else
             uuid, pkg = only(pkgs)
-            info = Pkg.Registry.registry_info(pkg)
+            info = if applicable(Pkg.Registry.registry_info, reg, pkg)
+                Pkg.Registry.registry_info(reg, pkg)
+            else
+                Pkg.Registry.registry_info(pkg)
+            end
             return collect(keys(info.version_info))
         end
     end
